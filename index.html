@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAT Calculator — Buy Abroad or in the USA?</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #1a1a1a;
+      background: #f5f5f5;
+      padding: 1.25rem;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    header { margin-bottom: 1.5rem; }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #ddd;
+      margin-bottom: 1.25rem;
+    }
+
+    .tab-btn {
+      padding: 0.55rem 1.2rem;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #555;
+      font-family: inherit;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .tab-btn { transition: color 0.15s; }
+    }
+
+    .tab-btn:hover { color: #222; }
+
+    .tab-btn:focus-visible {
+      outline: 2px solid #0057d8;
+      outline-offset: 2px;
+    }
+
+    .tab-btn.active {
+      color: #0057d8;
+      border-bottom-color: #0057d8;
+      font-weight: 600;
+    }
+
+    /* Card */
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 480px) {
+      .field-row { grid-template-columns: 1fr; }
+    }
+
+    .field { display: flex; flex-direction: column; gap: 0.35rem; }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #444;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .currency-sym {
+      position: absolute;
+      left: 0.65rem;
+      color: #666;
+      pointer-events: none;
+      font-size: 0.95rem;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 0.5rem 0.6rem 0.5rem 1.7rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-family: inherit;
+      color: #1a1a1a;
+      background: #fff;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    input[type="number"]:focus {
+      outline: 2px solid #0057d8;
+      outline-offset: 0;
+      border-color: #0057d8;
+    }
+
+    /* Result */
+    .result {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      min-height: 4.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .result-inner { display: flex; flex-direction: column; gap: 0.3rem; }
+
+    .result-neutral { color: #777; font-size: 0.95rem; }
+
+    .verdict {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .verdict.abroad { color: #186b18; }
+    .verdict.usa    { color: #0044aa; }
+    .verdict.wash   { color: #555; }
+
+    .savings { font-size: 0.95rem; color: #555; }
+
+    /* Collapsible */
+    details {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+
+    summary {
+      padding: 0.9rem 1.25rem;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #333;
+      user-select: none;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::after {
+      content: '▸';
+      font-size: 0.8rem;
+      color: #999;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      summary::after { transition: transform 0.15s; }
+    }
+
+    details[open] summary::after { transform: rotate(90deg); }
+
+    summary:focus-visible {
+      outline: 2px solid #0057d8;
+      outline-offset: 2px;
+    }
+
+    .details-body {
+      padding: 0.75rem 1.25rem 1.25rem;
+      border-top: 1px solid #eee;
+    }
+
+    /* Breakdown table */
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .breakdown-table td {
+      padding: 0.35rem 0.25rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .breakdown-table tr:last-child td { border-bottom: none; }
+
+    .breakdown-table td:last-child {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .breakdown-table .section-hdr td {
+      color: #777;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding-top: 0.85rem;
+      border-bottom: none;
+    }
+
+    .breakdown-table .total-row td {
+      font-weight: 600;
+      border-top: 2px solid #ddd;
+      padding-top: 0.5rem;
+    }
+
+    /* Rates section */
+    .rates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 0.8rem;
+    }
+
+    .rate-field { display: flex; flex-direction: column; gap: 0.3rem; }
+
+    .rate-field label { font-size: 0.82rem; }
+
+    .rate-field input[type="number"] {
+      padding: 0.42rem 0.5rem 0.42rem 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .fx-wrap {
+      display: flex;
+      gap: 0.4rem;
+      align-items: stretch;
+    }
+
+    .fx-wrap input { flex: 1; min-width: 0; }
+
+    .refresh-btn {
+      padding: 0.42rem 0.65rem;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .refresh-btn:hover { background: #e4e4e4; }
+
+    .refresh-btn:focus-visible {
+      outline: 2px solid #0057d8;
+      outline-offset: 2px;
+    }
+
+    .fx-status {
+      margin-top: 0.6rem;
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    .fx-status.error { color: #b83000; }
+
+    .note {
+      margin-top: 0.85rem;
+      font-size: 0.82rem;
+      color: #666;
+      background: #f8f8f8;
+      border-left: 3px solid #bbb;
+      padding: 0.45rem 0.7rem;
+      border-radius: 0 3px 3px 0;
+    }
+
+    footer {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid #ddd;
+      font-size: 0.8rem;
+      color: #888;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>VAT Calculator</h1>
+    <p class="subtitle">Should you buy abroad or in the USA? Compare prices after VAT refund vs. US sales tax.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" role="tab" aria-selected="true"  data-tab="eu">European Union</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" data-tab="uk">United Kingdom</button>
+  </div>
+
+  <div class="card">
+    <div class="field-row">
+      <div class="field">
+        <label for="local-price" id="local-price-label">Local price (€)</label>
+        <div class="input-wrap">
+          <span class="currency-sym" id="currency-sym">€</span>
+          <input type="number" id="local-price" placeholder="0.00" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="field">
+        <label for="us-price">US price (USD, pre-tax)</label>
+        <div class="input-wrap">
+          <span class="currency-sym">$</span>
+          <input type="number" id="us-price" placeholder="0.00" min="0" step="0.01">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result" id="result">
+    <p class="result-neutral">Enter both prices to compare.</p>
+  </div>
+
+  <details id="breakdown-details">
+    <summary>Breakdown</summary>
+    <div class="details-body">
+      <table class="breakdown-table">
+        <tbody id="breakdown-body">
+          <tr><td colspan="2" style="color:#999;font-size:0.88rem;">Enter both prices to see the breakdown.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details id="rates-details">
+    <summary>Rates &amp; Assumptions</summary>
+    <div class="details-body">
+      <div class="rates-grid">
+        <div class="rate-field">
+          <label for="vat-rate">VAT rate (%)</label>
+          <input type="number" id="vat-rate" value="20" min="0" max="100" step="0.1">
+        </div>
+        <div class="rate-field">
+          <label for="vat-recovered">VAT recovered (%)</label>
+          <input type="number" id="vat-recovered" value="65" min="0" max="100" step="1">
+        </div>
+        <div class="rate-field">
+          <label for="us-tax">US sales tax (%)</label>
+          <input type="number" id="us-tax" value="8.25" min="0" max="30" step="0.01">
+        </div>
+        <div class="rate-field">
+          <label for="fx-rate" id="fx-rate-label">FX rate (1 € = ? USD)</label>
+          <div class="fx-wrap">
+            <input type="number" id="fx-rate" value="1.1473" min="0.0001" step="0.0001">
+            <button class="refresh-btn" id="refresh-fx" title="Fetch live rate">↻ Refresh</button>
+          </div>
+        </div>
+      </div>
+      <div class="fx-status" id="fx-status"></div>
+      <div id="uk-note" class="note" style="display:none;">
+        The UK withdrew tourist VAT refunds in January 2021. VAT recovered is set to 0% by default but remains editable.
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    Exchange rates, VAT rates, and refund rules change — always verify before a significant purchase.
+    UK tourist VAT refunds were withdrawn in January 2021. VAT recovered % uses a conservative blended default (~65%)
+    based on typical Global Blue refund history after fees.
+  </footer>
+
+</div>
+<script>
+(function () {
+  'use strict';
+
+  var FALLBACK = { EUR: 1.1473, GBP: 1.27 };
+
+  var state = {
+    eu: {
+      name: 'European Union',
+      short: 'EU',
+      currency: 'EUR',
+      sym: '€',
+      vatDefault: 20,
+      recoveredDefault: 65,
+      localPrice: '',
+      usPrice: '',
+      vat: 20,
+      recovered: 65,
+      fx: FALLBACK.EUR,
+    },
+    uk: {
+      name: 'United Kingdom',
+      short: 'UK',
+      currency: 'GBP',
+      sym: '£',
+      vatDefault: 20,
+      recoveredDefault: 0,
+      localPrice: '',
+      usPrice: '',
+      vat: 20,
+      recovered: 0,
+      fx: FALLBACK.GBP,
+    },
+  };
+
+  var activeTab = 'eu';
+
+  // Elements
+  var tabBtns       = document.querySelectorAll('.tab-btn');
+  var localPriceEl  = document.getElementById('local-price');
+  var usPriceEl     = document.getElementById('us-price');
+  var localLabelEl  = document.getElementById('local-price-label');
+  var currencySymEl = document.getElementById('currency-sym');
+  var resultEl      = document.getElementById('result');
+  var breakdownEl   = document.getElementById('breakdown-body');
+  var vatRateEl     = document.getElementById('vat-rate');
+  var vatRecovEl    = document.getElementById('vat-recovered');
+  var usTaxEl       = document.getElementById('us-tax');
+  var fxRateEl      = document.getElementById('fx-rate');
+  var fxLabelEl     = document.getElementById('fx-rate-label');
+  var fxStatusEl    = document.getElementById('fx-status');
+  var refreshBtn    = document.getElementById('refresh-fx');
+  var ukNoteEl      = document.getElementById('uk-note');
+
+  function tab() { return state[activeTab]; }
+
+  function saveTab() {
+    var t = tab();
+    t.localPrice = localPriceEl.value;
+    t.usPrice    = usPriceEl.value;
+    t.vat        = parseFloat(vatRateEl.value)  || 0;
+    t.recovered  = parseFloat(vatRecovEl.value) || 0;
+    t.fx         = parseFloat(fxRateEl.value)   || FALLBACK[t.currency];
+  }
+
+  function loadTab() {
+    var t = tab();
+    localPriceEl.value  = t.localPrice;
+    usPriceEl.value     = t.usPrice;
+    vatRateEl.value     = t.vat;
+    vatRecovEl.value    = t.recovered;
+    fxRateEl.value      = t.fx.toFixed(4);
+
+    localLabelEl.textContent  = 'Local price (' + t.sym + ')';
+    currencySymEl.textContent = t.sym;
+    fxLabelEl.textContent     = 'FX rate (1 ' + t.sym + ' = ? USD)';
+    ukNoteEl.style.display    = (activeTab === 'uk') ? 'block' : 'none';
+  }
+
+  function switchTab(id) {
+    saveTab();
+    activeTab = id;
+    tabBtns.forEach(function (btn) {
+      var active = btn.dataset.tab === id;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    loadTab();
+    compute();
+  }
+
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
+  });
+
+  // Formatting
+  function usd(n) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+  }
+  function local(n) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: tab().currency }).format(n);
+  }
+
+  function compute() {
+    var t        = tab();
+    var sticker  = parseFloat(localPriceEl.value);
+    var usPrice  = parseFloat(usPriceEl.value);
+    var vat      = parseFloat(vatRateEl.value)  || 0;
+    var recovered= parseFloat(vatRecovEl.value) || 0;
+    var fx       = parseFloat(fxRateEl.value)   || t.fx;
+    var salesTax = parseFloat(usTaxEl.value)    || 0;
+
+    if (!(sticker > 0) || !(usPrice > 0)) {
+      resultEl.innerHTML   = '<p class="result-neutral">Enter both prices to compare.</p>';
+      breakdownEl.innerHTML= '<tr><td colspan="2" style="color:#999;font-size:0.88rem;">Enter both prices to see the breakdown.</td></tr>';
+      return;
+    }
+
+    var vatInside   = sticker * (vat / 100) / (1 + vat / 100);
+    var refundKept  = vatInside * (recovered / 100);
+    var netLocal    = sticker - refundKept;
+    var netUSD      = netLocal * fx;
+    var salesTaxAmt = usPrice * (salesTax / 100);
+    var usTotal     = usPrice + salesTaxAmt;
+    var delta       = netUSD - usTotal;
+
+    var WASH = 0.005;
+    var html;
+    if (Math.abs(delta) < WASH) {
+      html = '<div class="result-inner"><div class="verdict wash">It\'s a wash</div>'
+           + '<div class="savings">Both options cost about the same.</div></div>';
+    } else if (delta < 0) {
+      html = '<div class="result-inner"><div class="verdict abroad">Buy in the ' + t.name + '</div>'
+           + '<div class="savings">You save ' + usd(Math.abs(delta)) + ' vs. buying in the USA.</div></div>';
+    } else {
+      html = '<div class="result-inner"><div class="verdict usa">Buy in the USA</div>'
+           + '<div class="savings">You save ' + usd(delta) + ' vs. buying abroad.</div></div>';
+    }
+    resultEl.innerHTML = html;
+
+    breakdownEl.innerHTML =
+      '<tr class="section-hdr"><td colspan="2">' + t.name + ' (' + t.sym + ')</td></tr>' +
+      '<tr><td>Local sticker price</td><td>' + local(sticker) + '</td></tr>' +
+      '<tr><td>VAT inside price</td><td>' + local(vatInside) + '</td></tr>' +
+      '<tr><td>Refund kept (' + recovered + '%)</td><td>&minus;&thinsp;' + local(refundKept) + '</td></tr>' +
+      '<tr class="total-row"><td>Net local price</td><td>' + local(netLocal) + '</td></tr>' +
+      '<tr class="section-hdr"><td colspan="2">In USD</td></tr>' +
+      '<tr><td>' + t.name + ', net cost (&times;&thinsp;' + fx.toFixed(4) + ')</td><td>' + usd(netUSD) + '</td></tr>' +
+      '<tr><td>US price (pre-tax)</td><td>' + usd(usPrice) + '</td></tr>' +
+      '<tr><td>Sales tax (' + salesTax + '%)</td><td>+&thinsp;' + usd(salesTaxAmt) + '</td></tr>' +
+      '<tr class="total-row"><td>USA, total cost</td><td>' + usd(usTotal) + '</td></tr>';
+  }
+
+  // Inputs
+  localPriceEl.addEventListener('input', function () { tab().localPrice = localPriceEl.value; compute(); });
+  usPriceEl.addEventListener('input',    function () { tab().usPrice    = usPriceEl.value;    compute(); });
+  vatRateEl.addEventListener('input',    function () { tab().vat        = parseFloat(vatRateEl.value)  || 0; compute(); });
+  vatRecovEl.addEventListener('input',   function () { tab().recovered  = parseFloat(vatRecovEl.value) || 0; compute(); });
+  usTaxEl.addEventListener('input',      compute);
+  fxRateEl.addEventListener('input',     function () { tab().fx = parseFloat(fxRateEl.value) || FALLBACK[tab().currency]; compute(); });
+
+  // Live FX
+  function fetchFX() {
+    fxStatusEl.textContent  = 'Fetching live rates…';
+    fxStatusEl.className    = 'fx-status';
+    fetch('https://api.frankfurter.app/latest?from=USD&to=EUR,GBP')
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var rates = data.rates;
+        state.eu.fx = parseFloat((1 / rates.EUR).toFixed(4));
+        state.uk.fx = parseFloat((1 / rates.GBP).toFixed(4));
+        fxRateEl.value = tab().fx.toFixed(4);
+        var now = new Date();
+        fxStatusEl.textContent = 'Rates updated ' + now.toLocaleTimeString() + ' (ECB via Frankfurter).';
+        compute();
+      })
+      .catch(function (err) {
+        fxStatusEl.textContent = 'Could not fetch live rates (' + err.message + '). Using fallback defaults.';
+        fxStatusEl.className   = 'fx-status error';
+      });
+  }
+
+  refreshBtn.addEventListener('click', fetchFX);
+
+  // Init
+  loadTab();
+  compute();
+  fetchFX();
+}());
+</script>
+</body>
+</html>
