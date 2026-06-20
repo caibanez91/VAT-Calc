@@ -558,28 +558,61 @@
   usTaxEl.addEventListener('input',      compute);
   fxRateEl.addEventListener('input',     function () { tab().fx = parseFloat(fxRateEl.value) || FALLBACK[tab().currency]; compute(); });
 
-  // Live FX
-  function fetchFX() {
-    fxStatusEl.textContent  = 'Fetching live rates…';
-    fxStatusEl.className    = 'fx-status';
-    fetch('https://api.frankfurter.app/latest?from=USD&to=EUR,GBP')
+  // Live FX — tries three independent sources in sequence, uses hardcoded fallback if all fail
+  var FX_SOURCES = [
+    {
+      name: 'Frankfurter (ECB)',
+      url: 'https://api.frankfurter.app/latest?from=USD&to=EUR,GBP',
+      parse: function (data) { return { EUR: data.rates.EUR, GBP: data.rates.GBP }; }
+    },
+    {
+      name: 'ExchangeRate-API',
+      url: 'https://open.er-api.com/v6/latest/USD',
+      parse: function (data) { return { EUR: data.rates.EUR, GBP: data.rates.GBP }; }
+    },
+    {
+      name: 'Fawaz Ahmed / jsDelivr',
+      url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json',
+      parse: function (data) { return { EUR: data.usd.eur, GBP: data.usd.gbp }; }
+    }
+  ];
+
+  function applyRates(usdPerEur, usdPerGbp, sourceName) {
+    state.eu.fx = parseFloat((1 / usdPerEur).toFixed(4));
+    state.uk.fx = parseFloat((1 / usdPerGbp).toFixed(4));
+    fxRateEl.value = tab().fx.toFixed(4);
+    var now = new Date();
+    fxStatusEl.textContent = 'Rates updated ' + now.toLocaleTimeString() + ' (' + sourceName + ').';
+    fxStatusEl.className = 'fx-status';
+    compute();
+  }
+
+  function trySource(index) {
+    if (index >= FX_SOURCES.length) {
+      fxStatusEl.textContent = 'All rate sources failed. Using fallback defaults.';
+      fxStatusEl.className   = 'fx-status error';
+      return;
+    }
+    var src = FX_SOURCES[index];
+    fetch(src.url)
       .then(function (res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
       })
       .then(function (data) {
-        var rates = data.rates;
-        state.eu.fx = parseFloat((1 / rates.EUR).toFixed(4));
-        state.uk.fx = parseFloat((1 / rates.GBP).toFixed(4));
-        fxRateEl.value = tab().fx.toFixed(4);
-        var now = new Date();
-        fxStatusEl.textContent = 'Rates updated ' + now.toLocaleTimeString() + ' (ECB via Frankfurter).';
-        compute();
+        var rates = src.parse(data);
+        if (!rates.EUR || !rates.GBP) throw new Error('missing rates');
+        applyRates(rates.EUR, rates.GBP, src.name);
       })
-      .catch(function (err) {
-        fxStatusEl.textContent = 'Could not fetch live rates (' + err.message + '). Using fallback defaults.';
-        fxStatusEl.className   = 'fx-status error';
+      .catch(function () {
+        trySource(index + 1);
       });
+  }
+
+  function fetchFX() {
+    fxStatusEl.textContent = 'Fetching live rates…';
+    fxStatusEl.className   = 'fx-status';
+    trySource(0);
   }
 
   refreshBtn.addEventListener('click', fetchFX);
